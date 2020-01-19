@@ -9,8 +9,8 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div(children=[
     html.H1(children='Twitter Sentiment'),
 
-    html.Div(children='''
-        Dash: A web application framework for Python. '''),
+    html.Div(children=''' 
+    Recent tweets that contain your keyword are pulled from Twitter and visualized in the Sentiment . '''),
 
     dcc.Graph(
         id='example-graph',
