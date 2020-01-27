@@ -10,6 +10,8 @@ import re
 import sys
 import pandas as pd
 from dash.dependencies import Output, State, Input
+import preprocessor as p
+
 consumer_key = '2TZ1K5IosiWpBB1AgRzUN2OYe'
 consumer_secret = 'wYB8KHMlK6IRSf7Rr1Chl1jx2chaRqzPa4HVKoZsHVWIMJ7g4d'
 
@@ -21,11 +23,9 @@ auth.set_access_token(access_token_key, access_token_secret)
 
 api = tweepy.API(auth)
 
-
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
 
 app.layout = html.Div([
     dcc.Input(id='username', value='', type='text'),
@@ -33,11 +33,12 @@ app.layout = html.Div([
     html.Div(id='output_div')
 ])
 
+
 def generate_table(dataframe, max_rows=100):
-    return  dash_table.DataTable(
-    data=dataframe.to_dict('records'),
-    columns=[{'id': c, 'name': c} for c in dataframe.columns],
-    style_cell={'textAlign': 'left'},
+    return dash_table.DataTable(
+        data=dataframe.to_dict('records'),
+        columns=[{'id': c, 'name': c} for c in dataframe.columns],
+        style_cell={'textAlign': 'left'},
 
         style_data_conditional=[
             {
@@ -45,8 +46,8 @@ def generate_table(dataframe, max_rows=100):
                     'filter_query': '{Sentiment} eq "Positive"'
                 },
 
-                    'backgroundColor': '#3D9970',
-                    'color': 'white'
+                'backgroundColor': '#3D9970',
+                'color': 'white'
 
             },
             {
@@ -59,50 +60,48 @@ def generate_table(dataframe, max_rows=100):
 
             }
         ]
-)
+    )
 
+
+# clean tweets 
+
+def clean_tweets(txt):
+    txt = " ".join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t]) | (\w +:\ / \ / \S +)", "", txt).split())
+    p.set_options(p.OPT.URL, p.OPT.EMOJI, p.OPT.NUMBER)
+    tweet_cleean = p.clean(txt)
+    return tweet_cleean
 
 
 @app.callback(Output('output_div', 'children'),
               [Input('submit-button', 'n_clicks')],
-              [State('username', 'value')],)
-
-
-
+              [State('username', 'value')], )
 def update_output(clicks, input_value):
     # data = []
     if clicks is not None:
-            data = []
-            topic=input_value
-            topicname = topic
-            pubic_tweets = api.search(topicname)
-            for tweet in pubic_tweets:
-                    text = tweet.text
+        data = []
+        topic = input_value
+        topicname = topic
+        pubic_tweets = api.search(topicname)
+        for tweet in pubic_tweets:
+            text = tweet.text
+            cleanedTweet = clean_tweets(text)
+            print('*******************')
+            print(cleanedTweet)
+            analysis = TextBlob(cleanedTweet)
+            print(analysis.sentiment)
+            polarity = 'Negative'
+            if analysis.sentiment.polarity > 0.2:
+                polarity = 'Positive'
+            if -0.2 <= analysis.sentiment.polarity <= 0.2:
+                polarity = 'Neutral'
+            dic = {'Sentiment': polarity, 'Tweet': cleanedTweet}
+            data.append(dic)
+        df = pd.DataFrame(data)
 
-                    textWords = text.split()
-
-                    cleanedTweet = ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|(RT)", " ", text).split())
-                    print(cleanedTweet)
-
-                    analysis = TextBlob(cleanedTweet)
-                    print(analysis.sentiment)
-                    polarity = 'Positive'
-
-                    if (analysis.sentiment.polarity < 0):
-                        polarity = 'Negative'
-
-                    if (0 <= analysis.sentiment.polarity <= 0.2):
-                        polarity = 'Neutral'
-                    dic = {'Sentiment': polarity, 'Tweet': cleanedTweet}
-                    data.append(dic)
-            df = pd.DataFrame(data)
-
-            return html.Div(children=[
-                html.H4(children='twitter sentmient analyses'),
-                generate_table(df)
-            ])
-
-
+        return html.Div(children=[
+            html.H4(children='twitter sentmient analyses'),
+            generate_table(df)
+        ])
 
 
 if __name__ == '__main__':
