@@ -48,7 +48,7 @@ def generate_table(dataframe, max_rows=100):
                     'filter_query': '{Sentiment} eq "Positive"'
                 },
 
-                'backgroundColor': '#3D9970',
+                'backgroundColor': 'green',
                 'color': 'white'
 
             },
@@ -58,6 +58,15 @@ def generate_table(dataframe, max_rows=100):
                 },
 
                 'backgroundColor': 'red',
+                'color': 'white'
+
+            },
+            {
+                'if': {
+                    'filter_query': '{Sentiment} eq "Neutral"'
+                },
+
+                'backgroundColor': 'blue',
                 'color': 'white'
 
             }
@@ -96,7 +105,6 @@ def plotly_wordcloud(text):
         color_list.append(color)
     length = len(text)
 
-
     # get the positions
     x = []
     y = []
@@ -134,6 +142,11 @@ def plotly_wordcloud(text):
     return fig
 
 
+def percentage(part, whole):
+    temp = 100 * float(part) / float(whole)
+    return format(temp)
+
+
 @app.callback(Output('output_div', 'children'),
               [Input('submit-button', 'n_clicks')],
               [State('username', 'value')], )
@@ -146,7 +159,10 @@ def update_output(clicks, input_value):
         # input Number Search Terms
         noOfSearchTerms = 3200
         pubic_tweets = api.search(q=topicname, lang="en", count=noOfSearchTerms, tweet_mode="extended")
-
+        positive = 0
+        negative = 0
+        neutral = 0
+        polarity = 0
         for tweet in pubic_tweets:
             text = tweet.full_text
             cleanedTweet = clean_tweets(text)
@@ -160,13 +176,50 @@ def update_output(clicks, input_value):
             dic = {'Sentiment': polarity, 'Polarity': analysis.sentiment.polarity,
                    'Subject': analysis.sentiment.subjectivity, 'Tweet': cleanedTweet}
             data.append(dic)
+            if analysis.sentiment.polarity > 0.2:
+                positive += 1
+            if -0.2 <= analysis.sentiment.polarity <= 0.2:
+                neutral += 1
+            if analysis.sentiment.polarity < -0.2:
+                negative += 1
         df = pd.DataFrame(data)
         words = df.Tweet
         iplot(plotly_wordcloud(words))
+        labels = ['Positive', 'Negative', 'Neutral']
+        led = len(df)
+        print("****longour", led)
+        print("*****", positive)
+        print("*****", negative)
+        print("----", neutral)
+        positive = float(percentage(positive, led))
+        negative = float(percentage(negative, led))
+        neutral = float(percentage(neutral, led))
+
+        print("*****", positive)
+        print("*****", negative)
+        print("*****", neutral)
+
+        values = [positive, negative, neutral]
+        colors = ['green', 'red', 'blue']
 
         return html.Div(children=[
             html.H4(children='twitter sentmient analyses'),
+            dcc.Graph(id='TPiePlot',
+                      figure={
+                          'data': [go.Pie(labels=labels,
+                                          values=values,
+                                          marker=dict(colors=colors, line=dict(color='#fff', width=1)),
+                                          hoverinfo='label+value+percent', textinfo='value',
+                                          domain={'x': [0, .25], 'y': [0, 1]}
+                                          )
+                                   ],
+                          'layout': go.Layout(title='How people are reacting on',
+                                              autosize=True
+                                              )
+                      }
+                      ),
             generate_table(df)
+
         ])
 
 
