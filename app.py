@@ -28,20 +28,46 @@ api = tweepy.API(auth)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+colors = {
+    'background': '#ffffff',
+    'text': '#7FDBFF'
+}
+app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+    html.H1(
+        children='twitter feel',
+        style={
+            'textAlign': 'center',
+            'color': colors['text']
+        }
+    ),
 
-app.layout = html.Div([
-    dcc.Input(id='username', value='', type='text'),
-    html.Button(id='submit-button', type='submit', children='Submit'),
-    html.Div(id='output_div')
+    html.Div(children='Discover the Twitter sentiment for a product or brand..', style={
+        'textAlign': 'center',
+        'color': colors['text']
+    }),
+
+    dcc.Input(id='username', value='', type='text' , style={'width': '30%', 'margin': '0%', 'textAlign': 'left'}),
+    html.Button(id='submit-button', type='submit', children='Submit' ,style={'width': '20%', 'margin': '0%', 'align-items': 'center'}),
+    html.Div(id='output_div',  style={
+        'textAlign': 'center',
+        'color': colors['text']
+    })
+
 ])
+
+
 
 
 def generate_table(dataframe, max_rows=100):
     return dash_table.DataTable(
         data=dataframe.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in dataframe.columns],
-        style_cell={'textAlign': 'left'},
-
+        style_as_list_view=True,
+        style_cell={'textAlign': 'left', 'padding': '5px'},
+        style_header={
+            'backgroundColor': 'rgb(230, 230, 230)',
+            'fontWeight': 'bold'
+        },
         style_data_conditional=[
             {
                 'if': {
@@ -70,6 +96,7 @@ def generate_table(dataframe, max_rows=100):
                 'color': 'white'
 
             }
+
         ]
     )
 
@@ -162,7 +189,7 @@ def update_output(clicks, input_value):
         positive = 0
         negative = 0
         neutral = 0
-        polarity = 0
+
         for tweet in pubic_tweets:
             text = tweet.full_text
             cleanedTweet = clean_tweets(text)
@@ -173,8 +200,8 @@ def update_output(clicks, input_value):
                 polarity = 'Positive'
             if -0.2 <= analysis.sentiment.polarity <= 0.2:
                 polarity = 'Neutral'
-            dic = {'Sentiment': polarity, 'Polarity': analysis.sentiment.polarity,
-                   'Subject': analysis.sentiment.subjectivity, 'Tweet': cleanedTweet}
+            dic = {'Tweet': cleanedTweet, 'Sentiment': polarity, 'Polarity': analysis.sentiment.polarity,
+                   'Subject': analysis.sentiment.subjectivity}
             data.append(dic)
             if analysis.sentiment.polarity > 0.2:
                 positive += 1
@@ -203,7 +230,6 @@ def update_output(clicks, input_value):
         colors = ['green', 'red', 'blue']
 
         return html.Div(children=[
-            html.H4(children='twitter sentmient analyses'),
             dcc.Graph(id='TPiePlot',
                       figure={
                           'data': [go.Pie(labels=labels,
@@ -213,9 +239,10 @@ def update_output(clicks, input_value):
                                           domain={'x': [0, .25], 'y': [0, 1]}
                                           )
                                    ],
-                          'layout': go.Layout(title='How people are reacting on',
+                          'layout': go.Layout(title='Tweet Sentiment Visualization',
                                               autosize=True
                                               )
+
                       }
                       ),
             generate_table(df)
