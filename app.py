@@ -14,11 +14,11 @@ import plotly.graph_objs as go
 import random
 from plotly.offline import iplot
 
-consumer_key = '2TZ1K5IosiWpBB1AgRzUN2OYe'
-consumer_secret = 'wYB8KHMlK6IRSf7Rr1Chl1jx2chaRqzPa4HVKoZsHVWIMJ7g4d'
+consumer_key = '********'
+consumer_secret = '*******'
 
-access_token_key = '1184232235488219136-bFjHLEHvbLcBt9SJ5PqXvNhfmd2wX4'
-access_token_secret = '3GLCtypZ0ibi2DVMY9sgQwnVuooBE90raAxtUik4luNfv'
+access_token_key = '*********'
+access_token_secret = '*********'
 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token_key, access_token_secret)
